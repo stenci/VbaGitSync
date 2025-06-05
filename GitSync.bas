@@ -2,8 +2,8 @@ Attribute VB_Name = "GitSync"
 Option Explicit
 
 ' Requires reference to:
-'  - Microsoft Scripting Runtime
-'  - Microsoft Visual Basic for Applications Extensibility
+'  - Microsoft Scripting Runtime: C:\Windows\SysWOW64\scrrun.dll
+'  - Microsoft Visual Basic for Applications Extensibility: C:\Program Files (x86)\Common Files\Microsoft Shared\VBA\VBA6\VBE6EXT.OLB
 '
 ' Enable programmatic access to the VBA project object model:
 ' File > Options > Trust Center > Trust Center Settings > Macro Settings >
@@ -29,7 +29,7 @@ Public Function GitSync(WorkbookToExport As Workbook, Optional ExportToPath As S
 
   ' load & prune metadata
   Dim MetaDataPath As String, MetaData As New Dictionary
-  MetaDataPath = ExportPath & "\" & MetaDataFile
+  MetaDataPath = ExportPath & MetaDataFile
 
   Dim FileContent As String, Lines() As String, I As Long, LineItem, Parts() As String
   If FSO.FileExists(MetaDataPath) Then
@@ -65,7 +65,7 @@ Public Function GitSync(WorkbookToExport As Workbook, Optional ExportToPath As S
     If Ext = "" Then GoTo NextComp
 
     FName = Comp.Name & Ext
-    FilePath = ExportPath & "\" & FName
+    FilePath = ExportPath & FName
 
     ' read external if exists
     Dim ExternalExists As Boolean, ExternalCode As String, ExternalHash As String, ExternalTime As Date
@@ -106,7 +106,7 @@ Public Function GitSync(WorkbookToExport As Workbook, Optional ExportToPath As S
           Else
             ' true conflict: hashes differ
             Dim ConflictedFiles As New Collection
-            WriteAllText ExportPath & "\" & Comp.Name & "-vba" & Ext, InternalCode
+            WriteAllText ExportPath & Comp.Name & "-vba" & Ext, InternalCode
             ConflictedFiles.Add FName
           End If
         ElseIf ExternalTime > LastSync Then
@@ -155,13 +155,13 @@ End Function
 
 Private Function DeleteUnusedFiles() As Collection
   Dim Deleted As New Collection
-  If Not FSO.FileExists(ExportPath & "\" & MetaDataFile) Then
+  If Not FSO.FileExists(ExportPath & MetaDataFile) Then
     Set DeleteUnusedFiles = Deleted
     Exit Function
   End If
 
   Dim Folder As Scripting.Folder, TrackedFiles As Dictionary, CsvFiles As Dictionary
-  Set Folder = FSO.GetFolder(ExportPath & "\")
+  Set Folder = FSO.GetFolder(ExportPath)
   Set TrackedFiles = GetAllTrackedFiles
   Set CsvFiles = New Dictionary
 
@@ -174,9 +174,9 @@ Private Function DeleteUnusedFiles() As Collection
   Dim File As Scripting.File, Ext As String
   For Each File In Folder.Files
     Ext = LCase(FSO.GetExtensionName(File.Name))
-    If (Ext = "bas" Or Ext = "cls" Or Ext = "frm") Then
+    If Ext = "bas" Or Ext = "cls" Or Ext = "frm" Then
       ' Only process base files (not -vba)
-      If Not (Right(File.Name, Len("-vba." & Ext)) = "-vba." & Ext) Then
+      If Not Right(File.Name, Len("-vba." & Ext)) = "-vba." & Ext Then
         If Not TrackedFiles.Exists(File.Name) Then
           Deleted.Add File.Name
           ' Also delete -vba version if it exists
@@ -209,7 +209,7 @@ Private Function GetComponentCode(Comp As VBIDE.VBComponent) As String
   If Right(Comp.Name, 11) = "__to_delete" Then Stop
   Dim TempPath As String, CM As VBIDE.CodeModule
   If Comp.Type = vbext_ct_ClassModule Or Comp.Type = vbext_ct_StdModule Then
-    TempPath = ExportPath & "\" & "__temp" & GetComponentExtension(Comp)
+    TempPath = ExportPath & "__temp" & GetComponentExtension(Comp)
     Comp.Export TempPath
     GetComponentCode = ReadAllText(TempPath)
     Kill TempPath
@@ -286,7 +286,7 @@ End Function
 
 Private Function GetAllTrackedFiles() As Dictionary
   Dim Result As New Dictionary, MetaDataPath As String
-  MetaDataPath = ExportPath & "\" & MetaDataFile
+  MetaDataPath = ExportPath & MetaDataFile
   If Not FSO.FileExists(MetaDataPath) Then
     Set GetAllTrackedFiles = Result
     Exit Function
@@ -323,7 +323,7 @@ Private Sub ExportAllSheetsToCSV(ExportedFiles As Collection)
   Dim RowValues() As String, CellValue As String, I As Long, J As Long
   Dim NewCsvContent As String, OldCsvContent As String, WS As Worksheet
   For Each WS In WB.Worksheets
-    FilePath = ExportPath & "\" & GetWorksheetCsvFileName(WS)
+    FilePath = ExportPath & GetWorksheetCsvFileName(WS)
     LastRow = WS.UsedRange.Rows.Count
     LastCol = WS.UsedRange.Columns.Count
     NewCsvContent = ""
@@ -438,7 +438,7 @@ End Function
 
 Private Sub DeleteAllConflictArtifacts(VBProj As VBIDE.VBProject)
   Dim Folder As Scripting.Folder, File As Scripting.File, NameLower As String
-  Set Folder = FSO.GetFolder(ExportPath & "\")
+  Set Folder = FSO.GetFolder(ExportPath)
   For Each File In Folder.Files
     NameLower = LCase(File.Name)
     If InStr(NameLower, "-vba.") > 0 Then File.Delete
@@ -447,7 +447,7 @@ Private Sub DeleteAllConflictArtifacts(VBProj As VBIDE.VBProject)
   Dim Comp As VBIDE.VBComponent, I As Integer
   For I = VBProj.VBComponents.Count To 1 Step -1
     Set Comp = VBProj.VBComponents(I)
-    If Right(Comp.Name, 11) = "__to_delete" Then Stop: VBProj.VBComponents.Remove Comp
+    If Right(Comp.Name, 11) = "__to_delete" Then VBProj.VBComponents.Remove Comp
   Next I
 End Sub
 

@@ -20,6 +20,16 @@ Public Function GitSync(WorkbookToExport As Workbook, Optional ExportToPath As S
   ExportPath = IIf(ExportToPath <> "", ExportToPath, WB.Path)
   If Right(ExportPath, 1) <> "\" Then ExportPath = ExportPath & "\"
 
+  Dim MetaDataPath As String
+  MetaDataPath = ExportPath & MetaDataFile
+
+  If Not FSO.FileExists(MetaDataPath) Then
+    If MsgBox("No "".GitSync"" file found in this folder:" & vbLf & ExportPath & vbLf & _
+      "This usually means this is not a VBA repository folder." & vbLf & _
+      "Do you want to export and create a synced folder here?" & vbLf & _
+      "If this is not the folder you want to sync, click No to cancel.", vbYesNo + vbQuestion, "Confirm Sync") <> vbYes Then Exit Function
+  End If
+
   Set NonAnsiWarnings = New Collection
 
   Dim VBProj As VBIDE.VBProject
@@ -28,10 +38,7 @@ Public Function GitSync(WorkbookToExport As Workbook, Optional ExportToPath As S
   DeleteAllConflictArtifacts VBProj
 
   ' load & prune metadata
-  Dim MetaDataPath As String, MetaData As New Dictionary
-  MetaDataPath = ExportPath & MetaDataFile
-
-  Dim FileContent As String, Lines() As String, I As Long, LineItem, Parts() As String
+  Dim MetaData As New Dictionary, FileContent As String, Lines() As String, I As Long, LineItem, Parts() As String
   If FSO.FileExists(MetaDataPath) Then
     FileContent = ReadAllText(MetaDataPath)
     Lines = Split(FileContent, vbCrLf)

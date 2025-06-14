@@ -40,6 +40,10 @@
   - Attempting deletion again.
   - If it still fails, deletion is retried on the next run.
 
+- ❓ **Sync Confirmation Outside Repository**\
+  When saving a workbook, GitSync checks for the presence of a `.GitSync` file in the target folder. If the file does not exist (indicating the folder is not a VBA repository), you will be prompted to confirm whether to perform the sync. This prevents accidental exports when saving copies of workbooks outside your repository.
+
+
 ---
 
 ## How to Use

@@ -19,15 +19,18 @@ Public Function GitSync(WorkbookToExport As Workbook, Optional ExportToPath As S
   Set WB = WorkbookToExport
   ExportPath = IIf(ExportToPath <> "", ExportToPath, WB.Path)
   If Right(ExportPath, 1) <> "\" Then ExportPath = ExportPath & "\"
+  
+  ' Check if the workbook is stored on SharePoint or another web-based location; local file operations are not supported
+  If Left(LCase(ExportPath), 7) = "http://" Or Left(LCase(ExportPath), 8) = "https://" Then Exit Function
 
   Dim MetaDataPath As String
   MetaDataPath = ExportPath & MetaDataFile
 
   If Not FSO.FileExists(MetaDataPath) Then
-    If MsgBox("No "".GitSync"" file found in this folder:" & vbLf & ExportPath & vbLf & _
-      "This usually means this is not a VBA repository folder." & vbLf & _
-      "Do you want to export and create a synced folder here?" & vbLf & _
-      "If this is not the folder you want to sync, click No to cancel.", vbYesNo + vbQuestion, "Confirm Sync") <> vbYes Then Exit Function
+    If MsgBox("No "".GitSync"" file found in this folder:" & vbLf & ExportPath & vbLf & vbLf & _
+      "This usually means this is not a VBA repository folder." & vbLf & vbLf & _
+      "Do you want to export and create a synced folder here?" & vbLf & vbLf & _
+      "If this is not the folder you want to sync, click No to cancel.", vbYesNo + vbQuestion + vbDefaultButton2, "Confirm Sync") <> vbYes Then Exit Function
   End If
 
   Set NonAnsiWarnings = New Collection

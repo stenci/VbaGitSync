@@ -256,12 +256,12 @@ Private Function ImportComponentCode(VBProj As VBIDE.VBProject, Comp As VBIDE.VB
   End If
 End Function
 
-Private Function ReadAllText(FilePath As String) As String
-  ReadAllText = FSO.OpenTextFile(FilePath, ForReading).ReadAll
+Private Function ReadAllText(FilePath As String, Optional AsUnicode As Boolean) As String
+  ReadAllText = FSO.OpenTextFile(FilePath, ForReading, False, IIf(AsUnicode, -1, 0)).ReadAll
 End Function
 
-Private Sub WriteAllText(FilePath As String, Text As String)
-  FSO.CreateTextFile(FilePath, True).Write Text
+Private Sub WriteAllText(FilePath As String, Text As String, Optional AsUnicode As Boolean)
+  FSO.CreateTextFile(FilePath, True, AsUnicode).Write Text
 End Sub
 
 Private Function EnsureFileCrlf(FilePath As String) As String
@@ -377,11 +377,11 @@ Private Sub ExportAllSheetsToCSV(ExportedFiles As Collection)
     Next I
 
     If FSO.FileExists(FilePath) Then
-      OldCsvContent = ReadAllText(FilePath)
+      OldCsvContent = ReadAllText(FilePath, True)
       If NewCsvContent = OldCsvContent Then GoTo NextSheet
     End If
 
-    WriteAllText FilePath, NewCsvContent
+    WriteAllText FilePath, NewCsvContent, True
     ExportedFiles.Add GetWorksheetCsvFileName(WS)
 
 NextSheet:

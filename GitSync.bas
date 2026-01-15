@@ -121,7 +121,12 @@ Public Function GitSync(WorkbookToExport As Workbook, Optional ExportToPath As S
           End If
         ElseIf ExternalTime > LastSync Then
           ' external only -> import
-          Dim ImportedFiles As New Collection
+          Dim ImportedFiles As New Collection, NormalizedExternalCode As String
+          NormalizedExternalCode = StripTrailingEmptyLines(EnsureFileCrlf(FilePath))
+          If NormalizedExternalCode <> ExternalCode Then
+            ExternalCode = NormalizedExternalCode
+            ExternalHash = GetTextHash(ExternalCode)
+          End If
           Set Comp = ImportComponentCode(VBProj, Comp, ExternalCode, FilePath)
           ImportedFiles.Add FName
           If Comp.Type = vbext_ct_Document Then
@@ -258,6 +263,21 @@ End Function
 Private Sub WriteAllText(FilePath As String, Text As String)
   FSO.CreateTextFile(FilePath, True).Write Text
 End Sub
+
+Private Function EnsureFileCrlf(FilePath As String) As String
+  Dim FileContent As String, Normalized As String
+  FileContent = ReadAllText(FilePath)
+  Normalized = NormalizeLineEndingsToCrlf(FileContent)
+  If Normalized <> FileContent Then WriteAllText FilePath, Normalized
+  EnsureFileCrlf = Normalized
+End Function
+
+Private Function NormalizeLineEndingsToCrlf(Text As String) As String
+  Dim Normalized As String
+  Normalized = Replace(Text, vbCrLf, vbLf)
+  Normalized = Replace(Normalized, vbCr, vbLf)
+  NormalizeLineEndingsToCrlf = Replace(Normalized, vbLf, vbCrLf)
+End Function
 
 Private Function GetComponentExtension(Comp As VBIDE.VBComponent) As String
   Select Case Comp.Type

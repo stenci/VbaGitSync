@@ -122,7 +122,7 @@ Public Function GitSync(WorkbookToExport As Workbook, Optional ExportToPath As S
         ElseIf ExternalTime > LastSync Then
           ' external only -> import
           Dim ImportedFiles As New Collection, NormalizedExternalCode As String
-          NormalizedExternalCode = StripTrailingEmptyLines(EnsureFileCrlf(FilePath))
+          NormalizedExternalCode = StripTrailingEmptyLines(EnsureTextCrlf(FilePath, ExternalCode))
           If NormalizedExternalCode <> ExternalCode Then
             ExternalCode = NormalizedExternalCode
             ExternalHash = GetTextHash(ExternalCode)
@@ -264,12 +264,11 @@ Private Sub WriteAllText(FilePath As String, Text As String, Optional AsUnicode 
   FSO.CreateTextFile(FilePath, True, AsUnicode).Write Text
 End Sub
 
-Private Function EnsureFileCrlf(FilePath As String) As String
-  Dim FileContent As String, Normalized As String
-  FileContent = ReadAllText(FilePath)
+Private Function EnsureTextCrlf(FilePath As String, FileContent As String) As String
+  Dim Normalized As String
   Normalized = NormalizeLineEndingsToCrlf(FileContent)
   If Normalized <> FileContent Then WriteAllText FilePath, Normalized
-  EnsureFileCrlf = Normalized
+  EnsureTextCrlf = Normalized
 End Function
 
 Private Function NormalizeLineEndingsToCrlf(Text As String) As String

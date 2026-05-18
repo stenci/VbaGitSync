@@ -231,6 +231,7 @@ Private Function GetComponentCode(Comp As VBIDE.VBComponent) As String
     GetComponentCode = StripTrailingEmptyLines(GetComponentCode)
   Else
     Set CM = Comp.CodeModule
+    If CM.CountOfLines = 0 Then Exit Function
     GetComponentCode = StripTrailingEmptyLines(CM.Lines(1, CM.CountOfLines))
   End If
   WarnIfNonAnsi GetComponentCode, Comp.Name
@@ -257,7 +258,10 @@ Private Function ImportComponentCode(VBProj As VBIDE.VBProject, Comp As VBIDE.VB
 End Function
 
 Private Function ReadAllText(FilePath As String, Optional AsUnicode As Boolean) As String
-  ReadAllText = FSO.OpenTextFile(FilePath, ForReading, False, IIf(AsUnicode, -1, 0)).ReadAll
+  Dim TextStream As Scripting.TextStream
+  Set TextStream = FSO.OpenTextFile(FilePath, ForReading, False, IIf(AsUnicode, -1, 0))
+  If Not TextStream.AtEndOfStream Then ReadAllText = TextStream.ReadAll
+  TextStream.Close
 End Function
 
 Private Sub WriteAllText(FilePath As String, Text As String, Optional AsUnicode As Boolean)
@@ -294,6 +298,7 @@ End Function
 
 Private Function StripTrailingEmptyLines(Text As String) As String
   Dim Lines() As String, I As Long
+  If Text = "" Then Exit Function
   Lines = Split(Text, vbCrLf)
   For I = UBound(Lines) To 0 Step -1
     If Trim(Lines(I)) <> "" Then Exit For
